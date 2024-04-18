@@ -1,5 +1,6 @@
 #include "DxLib.h"
 #include <stdlib.h>
+#include <cmath>
 
 const int SCREEN_WIDTH = 960, SCREEN_HEIGHT = 640;
 const int WHITE = GetColor(255, 255, 255);
@@ -136,6 +137,34 @@ void SetUp(int* ballPosX, int* ballPosY, int* ballVX, int* ballVY, int* racketPo
 	*scene = PLAY;
 }
 
+// Ease Out Cubic関数
+double EaseOutCubic(double x) {
+	double p = 1 - x;
+	return 1 - pow(p, 3);
+}
+
+// アルファ値を計算する関数
+int CalculateAlpha(int time, int duration) {
+	// 正規化された時間 (0.0 から 1.0)
+	// duration の半分で折り返す
+	double normalizedTime = static_cast<double>(time % duration) / duration;
+	double triangleWave;
+
+	// 三角波を生成（0から1へ上昇し、再び0へ下降）
+	if (normalizedTime < 0.5) {
+		triangleWave = 2.0 * normalizedTime;  // 0.0から1.0へ
+	}
+	else {
+		triangleWave = 2.0 * (1.0 - normalizedTime);  // 1.0から0.0へ
+	}
+
+	// Ease Out Cubicを適用して滑らかな変化を作る
+	double eased = EaseOutCubic(triangleWave);
+
+	// アルファ値 (0 から 255)
+	return static_cast<int>(255 * eased);
+}
+
 /// <summary>
 /// メイン関数
 /// </summary>
@@ -164,6 +193,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	//ゲーム進行に関する変数
 	int _scene = TITLE;
 	int _timer = 0;
+	int alpha;
 
 	while (1)
 	{
@@ -178,8 +208,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			
 			//文字を点滅表示
 			SetFontSize(30);
+			// アルファ値を計算 (80フレームごとに繰り返し)
+			alpha = CalculateAlpha(_timer, 80);
 			// 描画モードをアルファブレンドにして透明度を時間に合わせて変更させる
-			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255 * abs(_timer % 80 - 40) / 40.0);
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
 			DrawString(INSTRUCTION_TEXT_POS_X, INSTRUCTION_TEXT_POS_Y, "Press SPACE to start.", CYAN);
 			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
 			
