@@ -5,6 +5,7 @@
 const int SCREEN_WIDTH = 960, SCREEN_HEIGHT = 640;
 const int WHITE = GetColor(255, 255, 255);
 const int RED = GetColor(255, 0, 0);
+const int PINK = GetColor(255, 160, 160);
 const int GREEN = GetColor(0, 255, 0);
 const int YELLOW = GetColor(255, 255, 0);
 const int CYAN = GetColor(0, 255, 255);
@@ -71,7 +72,9 @@ void ballAction(int* posX,
 		PlaySoundMem(gameoverSE, DX_PLAYTYPE_BACK);
 	}
 
-	DrawCircle(*posX, *posY, radius, WHITE, TRUE);
+	DrawCircle(*posX, *posY, radius, RED, TRUE);
+	DrawCircle(*posX - radius / 4, *posY - radius / 4, radius / 2, PINK, TRUE);
+	DrawCircle(*posX - radius / 4, *posY - radius / 4, radius / 4, WHITE, TRUE);
 }
 
 /// <summary>
@@ -221,7 +224,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	while (1)
 	{
 		ClearDrawScreen();
-		DrawGraph(0, 0, _backgroundImage, FALSE);
+		//SetDrawBlendMode(DX_BLENDMODE_ALPHA, 50);
+		DrawGraph(0, 0, _backgroundImage, TRUE);
+		//SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
 		_timer++;
 
 		switch (_scene)
@@ -237,8 +243,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			// 描画モードをアルファブレンドにして透明度を時間に合わせて変更させる
 			SetDrawBlendMode(DX_BLENDMODE_ALPHA, _alpha);
 			DrawString(INSTRUCTION_TEXT_POS_X, INSTRUCTION_TEXT_POS_Y, "Press SPACE to start.", CYAN);
-			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
-			
+			SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+
 			if (CheckHitKey(KEY_INPUT_SPACE) == 1)
 			{
 				//ゲーム開始のために初期化
