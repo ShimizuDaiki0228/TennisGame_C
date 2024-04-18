@@ -1,6 +1,35 @@
 #include "DxLib.h"
 #include <stdlib.h>
 
+const int SCREEN_WIDTH = 960, SCREEN_HEIGHT = 640;
+const int WHITE = GetColor(255, 255, 255);
+const int RED = GetColor(255, 0, 0);
+const int GREEN = GetColor(0, 255, 0);
+const int YELLOW = GetColor(255, 255, 0);
+const int CYAN = GetColor(0, 255, 255);
+
+
+//ボールの初期情報
+const int BALL_INIT_POS_X = 40, BALL_INIT_POS_Y = 80, BALL_INIT_VELOCITY_X = 5, BALL_INIT_VELOCITY_Y = 5, BALL_RADIUS = 10;
+//ラケットの初期情報
+const int RACKET_INIT_POS_X = SCREEN_WIDTH / 2, RACKET_INIT_POS_Y = SCREEN_HEIGHT - 50, RACKET_WIDTH = 120, RACKET_HEIGHT = 12;
+//ゲーム進行に関する変数
+enum { TITLE, PLAY, GAMEOVER };
+
+
+//タイトル画面の定数
+const int TITLE_TEXT_POS_X = SCREEN_WIDTH / 2 - 50 / 2 * 12 / 2;
+const int TITLE_TEXT_POS_Y = SCREEN_HEIGHT / 3;
+const int INSTRUCTION_TEXT_POS_X = SCREEN_WIDTH / 2 - 30 / 2 * 21 / 2;
+const int INSTRUCTION_TEXT_POS_Y = SCREEN_HEIGHT * 2 / 3;
+
+
+//ゲームオーバー画面の定数
+const int GAMEOVER_TEXT_POS_X = SCREEN_WIDTH / 2 - 40 / 2 * 9 / 2;
+const int GAMEOVER_TEXT_POS_Y = SCREEN_HEIGHT / 3;
+const int TRANSITION_TO_TITLE_TIME = 60 * 5;
+
+
 /// <summary>
 /// ボールの動き
 /// </summary>
@@ -9,27 +38,30 @@
 /// <param name="velX">x方向の速さ</param>
 /// <param name="velY">y方向の速さ</param>
 /// <param name="radius">半径</param>
-/// <param name="screenWidth">画面の横のサイズ</param>
-/// <param name="screenHeight">画面の縦のサイズ</param>
-/// <param name="white">白のカラー</param>
+/// <param name="scene">画面の状態</param>
+/// <param name="timer">時間</param>
 void ballAction(int* posX,
 				int* posY,
 				int* velX,
 				int* velY,
 				int radius,
-				int screenWidth,
-				int screenHeight,
-				int white)
+				int* scene,
+				int* timer)
 {
 	*posX += *velX;
 	if ((*posX < radius && *velX < 0)
-		|| (*posX > screenWidth - radius && *velX > 0)) *velX *= -1;
+		|| (*posX > SCREEN_WIDTH - radius && *velX > 0)) *velX *= -1;
 
 	*posY += *velY;
-	if (*posY < radius && *velY < 0
-		|| *posY > screenHeight - radius && *velY > 0) *velY *= -1;
+	if (*posY < radius && *velY < 0) *velY *= -1;
 
-	DrawCircle(*posX, *posY, radius, white, TRUE);
+	if (*posY > SCREEN_HEIGHT)
+	{
+		*scene = GAMEOVER;
+		*timer = 0;
+	}
+
+	DrawCircle(*posX, *posY, radius, WHITE, TRUE);
 }
 
 /// <summary>
@@ -39,9 +71,7 @@ void ballAction(int* posX,
 /// <param name="posY">y座標</param>
 /// <param name="racketWidth">横のサイズ</param>
 /// <param name="racketHeight">縦のサイズ</param>
-/// <param name="screenWidth">画面の横のサイズ</param>
-/// <param name="white">白のカラー</param>
-void racketAction(int* posX, int posY, int racketWidth, int racketHeight, int screenWidth, int white)
+void racketAction(int* posX, int posY, int racketWidth, int racketHeight)
 {
 	if (CheckHitKey(KEY_INPUT_LEFT) == 1)
 	{
@@ -51,14 +81,14 @@ void racketAction(int* posX, int posY, int racketWidth, int racketHeight, int sc
 	if (CheckHitKey(KEY_INPUT_RIGHT) == 1)
 	{
 		*posX += 10;
-		if (*posX > screenWidth - racketWidth / 2) *posX = screenWidth - racketWidth / 2;
+		if (*posX > SCREEN_WIDTH - racketWidth / 2) *posX = SCREEN_WIDTH - racketWidth / 2;
 	}
 
 	DrawBox(*posX - racketWidth / 2,
 		posY - racketHeight / 2,
 		*posX + racketWidth / 2,
 		posY + racketHeight / 2,
-		white,
+		WHITE,
 		TRUE
 	);
 }
@@ -84,11 +114,26 @@ void checkHit(int ballPosX,
 	}
 }
 
-void textDisplay(int score, int highScore, int screenWidth, int white)
+void textDisplay(int score, int highScore)
 {
 	SetFontSize(30);
-	DrawFormatString(10, 10, white, "SCORE %d", score);
-	DrawFormatString(screenWidth - 200, 10, white, "HIGHSCORE %d", highScore);
+	DrawFormatString(10, 10, WHITE, "SCORE %d", score);
+	DrawFormatString(SCREEN_WIDTH - 260, 10, YELLOW, "HIGHSCORE %d", highScore);
+}
+
+/// <summary>
+/// 初期化
+/// </summary>
+void SetUp(int* ballPosX, int* ballPosY, int* ballVX, int* ballVY, int* racketPosX, int* racketPosY, int* score, int* scene)
+{
+	*ballPosX = BALL_INIT_POS_X;
+	*ballPosY = BALL_INIT_POS_Y;
+	*ballVX = BALL_INIT_VELOCITY_X;
+	*ballVY = BALL_INIT_VELOCITY_Y;
+	*racketPosX = RACKET_INIT_POS_X;
+	*racketPosY = RACKET_INIT_POS_Y;
+	*score = 0;
+	*scene = PLAY;
 }
 
 /// <summary>
@@ -101,8 +146,7 @@ void textDisplay(int score, int highScore, int screenWidth, int white)
 /// <returns></returns>
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	const int SCREEN_WIDTH = 960, SCREEN_HEIGHT = 640;
-	const int WHITE = GetColor(255, 255, 255);
+	
 
 	SetWindowText("テニスゲーム");
 	SetGraphMode(SCREEN_WIDTH, SCREEN_HEIGHT, 32);
@@ -112,27 +156,57 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	SetDrawScreen(DX_SCREEN_BACK);
 
 	//ボール
-	int _ballPosX = 40, _ballPosY = 80, _ballVX = 5, _ballVY = 5, _ballR = 10;
+	int _ballPosX, _ballPosY, _ballVX, _ballVY, _ballR = BALL_RADIUS;
 	//ラケット
-	int _racketPosX = SCREEN_WIDTH / 2, _racketPosY = SCREEN_HEIGHT - 50, _racketW = 120, _racketH = 12;
+	int _racketPosX, _racketPosY, _racketW = RACKET_WIDTH, _racketH = RACKET_HEIGHT;
 	//スコア
 	int _score = 0, _highScore = 200;
+	//ゲーム進行に関する変数
+	int _scene = TITLE;
+	int _timer = 0;
 
 	while (1)
 	{
 		ClearDrawScreen();
+		_timer++;
 
-		//ボールを動かす
-		ballAction(&_ballPosX, &_ballPosY, &_ballVX, &_ballVY, _ballR, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
+		switch (_scene)
+		{
+		case TITLE:
+			SetFontSize(50);
+			DrawString(TITLE_TEXT_POS_X, TITLE_TEXT_POS_Y, "Tennis Game", GREEN);
+			//文字を点滅表示
+			if (_timer % 60 < 30)
+			{
+				SetFontSize(30);
+				DrawString(INSTRUCTION_TEXT_POS_X, INSTRUCTION_TEXT_POS_Y, "Press SPACE to start.", CYAN);
+			}
+			if (CheckHitKey(KEY_INPUT_SPACE) == 1)
+			{
+				//ゲーム開始のために初期化
+				SetUp(&_ballPosX, &_ballPosY, &_ballVX, &_ballVY, &_racketPosX, &_racketPosY, &_score, &_scene);
+			}
+			break;
 
-		//ラケットを動かす
-		racketAction(&_racketPosX, _racketPosY, _racketW, _racketH, SCREEN_WIDTH, WHITE);
+		case PLAY:
+			//ボールを動かす
+			ballAction(&_ballPosX, &_ballPosY, &_ballVX, &_ballVY, _ballR, &_scene, &_timer);
+			//ラケットを動かす
+			racketAction(&_racketPosX, _racketPosY, _racketW, _racketH);
+			//ヒットチェック
+			checkHit(_ballPosX, _ballPosY, _racketPosX, _racketPosY, _racketW, &_ballVY, &_score, &_highScore);
+			//テキスト表示
+			textDisplay(_score, _highScore);
+			break;
 
-		//ヒットチェック
-		checkHit(_ballPosX, _ballPosY, _racketPosX, _racketPosY, _racketW, &_ballVY, &_score, &_highScore);
+		case GAMEOVER:
+			SetFontSize(40);
+			DrawString(GAMEOVER_TEXT_POS_X, GAMEOVER_TEXT_POS_Y, "GAME OVER", RED);
+			if (_timer > TRANSITION_TO_TITLE_TIME) _scene = TITLE;
+			break;
+		}
 
-		//テキスト表示
-		textDisplay(_score, _highScore, SCREEN_WIDTH, WHITE);
+		
 
 		ScreenFlip();
 		WaitTimer(16);
