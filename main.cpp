@@ -1,6 +1,8 @@
 #include "DxLib.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <cmath>
+#include <time.h>
 
 const int SCREEN_WIDTH = 960, SCREEN_HEIGHT = 640;
 const int WHITE = GetColor(255, 255, 255);
@@ -221,6 +223,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	ChangeVolumeSoundMem(128, _bgm);
 	ChangeVolumeSoundMem(128, _gameoverSE);
 
+	srand((unsigned int)time(NULL));
 	while (1)
 	{
 		ClearDrawScreen();
