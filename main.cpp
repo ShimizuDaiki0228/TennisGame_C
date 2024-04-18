@@ -1,6 +1,17 @@
 #include "DxLib.h"
+#include <stdlib.h>
 
-
+/// <summary>
+/// ボールの動き
+/// </summary>
+/// <param name="posX">x座標</param>
+/// <param name="posY">y座標</param>
+/// <param name="velX">x方向の速さ</param>
+/// <param name="velY">y方向の速さ</param>
+/// <param name="radius">半径</param>
+/// <param name="screenWidth">画面の横のサイズ</param>
+/// <param name="screenHeight">画面の縦のサイズ</param>
+/// <param name="white">白のカラー</param>
 void ballAction(int* posX,
 				int* posY,
 				int* velX,
@@ -21,6 +32,15 @@ void ballAction(int* posX,
 	DrawCircle(*posX, *posY, radius, white, TRUE);
 }
 
+/// <summary>
+/// ラケットの動き
+/// </summary>
+/// <param name="posX">x座標</param>
+/// <param name="posY">y座標</param>
+/// <param name="racketWidth">横のサイズ</param>
+/// <param name="racketHeight">縦のサイズ</param>
+/// <param name="screenWidth">画面の横のサイズ</param>
+/// <param name="white">白のカラー</param>
 void racketAction(int* posX, int posY, int racketWidth, int racketHeight, int screenWidth, int white)
 {
 	if (CheckHitKey(KEY_INPUT_LEFT) == 1)
@@ -43,6 +63,26 @@ void racketAction(int* posX, int posY, int racketWidth, int racketHeight, int sc
 	);
 }
 
+void checkHit(int ballPosX, int ballPosY, int racketPosX, int racketPosY, int racketWidth, int* ballVY)
+{
+	int dx = ballPosX - racketPosX;
+	int dy = ballPosY - racketPosY;
+
+	if ((-racketWidth / 2 - 10 < dx && dx < racketWidth / 2 + 10)
+		&& (-20 < dy && dy < 0))
+	{
+		*ballVY = -5 - rand() % 5;
+	}
+}
+
+/// <summary>
+/// メイン関数
+/// </summary>
+/// <param name="hInstance"></param>
+/// <param name="hPrevInstance"></param>
+/// <param name="lpCmdLine"></param>
+/// <param name="nCmdShow"></param>
+/// <returns></returns>
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	const int SCREEN_WIDTH = 960, SCREEN_HEIGHT = 640;
@@ -59,7 +99,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	int _ballPosX = 40, _ballPosY = 80, _ballVX = 5, _ballVY = 5, _ballR = 10;
 
 	//ラケット
-	int _racketX = SCREEN_WIDTH / 2, _racketY = SCREEN_HEIGHT - 50, _racketW = 120, _racketH = 12;
+	int _racketPosX = SCREEN_WIDTH / 2, _racketPosY = SCREEN_HEIGHT - 50, _racketW = 120, _racketH = 12;
 
 	while (1)
 	{
@@ -69,7 +109,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		ballAction(&_ballPosX, &_ballPosY, &_ballVX, &_ballVY, _ballR, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
 
 		//ラケットを動かす
-		racketAction(&_racketX, _racketY, _racketW, _racketH, SCREEN_WIDTH, WHITE);
+		racketAction(&_racketPosX, _racketPosY, _racketW, _racketH, SCREEN_WIDTH, WHITE);
+
+		//ヒットチェック
+		checkHit(_ballPosX, _ballPosY, _racketPosX, _racketPosY, _racketW, &_ballVY);
 
 		ScreenFlip();
 		WaitTimer(16);
