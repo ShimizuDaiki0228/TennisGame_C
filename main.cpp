@@ -31,6 +31,11 @@ const int GAMEOVER_TEXT_POS_Y = SCREEN_HEIGHT / 3;
 const int TRANSITION_TO_TITLE_TIME = 60 * 5;
 
 
+
+
+
+
+
 /// <summary>
 /// ボールの動き
 /// </summary>
@@ -47,7 +52,9 @@ void ballAction(int* posX,
 				int* velY,
 				int radius,
 				int* scene,
-				int* timer)
+				int* timer,
+				int bgm,
+				int gameoverSE)
 {
 	*posX += *velX;
 	if ((*posX < radius && *velX < 0)
@@ -60,6 +67,8 @@ void ballAction(int* posX,
 	{
 		*scene = GAMEOVER;
 		*timer = 0;
+		StopSoundMem(bgm);
+		PlaySoundMem(gameoverSE, DX_PLAYTYPE_BACK);
 	}
 
 	DrawCircle(*posX, *posY, radius, WHITE, TRUE);
@@ -101,7 +110,8 @@ void checkHit(int ballPosX,
 			  int racketWidth,
 			  int* ballVY,
 			  int* score,
-			  int* highScore)
+			  int* highScore,
+			  int hitSE)
 {
 	int dx = ballPosX - racketPosX;
 	int dy = ballPosY - racketPosY;
@@ -112,6 +122,7 @@ void checkHit(int ballPosX,
 		*ballVY = -5 - rand() % 5;
 		*score += 100;
 		if (*score > *highScore) *highScore = *score;
+		PlaySoundMem(hitSE, DX_PLAYTYPE_BACK);
 	}
 }
 
@@ -193,11 +204,24 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	//ゲーム進行に関する変数
 	int _scene = TITLE;
 	int _timer = 0;
-	int alpha;
+	int _alpha;
+
+	//背景画像
+	int _backgroundImage = LoadGraph("image/bg.png");
+
+	//サウンドの読み込み
+	int _bgm = LoadSoundMem("sound/bgm.mp3");
+	int _gameoverSE = LoadSoundMem("sound/gameover.mp3");
+	int _hitSE = LoadSoundMem("sound/hit.mp3");
+	
+	//音量設定
+	ChangeVolumeSoundMem(128, _bgm);
+	ChangeVolumeSoundMem(128, _gameoverSE);
 
 	while (1)
 	{
 		ClearDrawScreen();
+		DrawGraph(0, 0, _backgroundImage, FALSE);
 		_timer++;
 
 		switch (_scene)
@@ -209,9 +233,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			//文字を点滅表示
 			SetFontSize(30);
 			// アルファ値を計算 (80フレームごとに繰り返し)
-			alpha = CalculateAlpha(_timer, 80);
+			_alpha = CalculateAlpha(_timer, 80);
 			// 描画モードをアルファブレンドにして透明度を時間に合わせて変更させる
-			SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, _alpha);
 			DrawString(INSTRUCTION_TEXT_POS_X, INSTRUCTION_TEXT_POS_Y, "Press SPACE to start.", CYAN);
 			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
 			
@@ -219,16 +243,17 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 			{
 				//ゲーム開始のために初期化
 				SetUp(&_ballPosX, &_ballPosY, &_ballVX, &_ballVY, &_racketPosX, &_racketPosY, &_score, &_scene);
+				PlaySoundMem(_bgm, DX_PLAYTYPE_LOOP);
 			}
 			break;
 
 		case PLAY:
 			//ボールを動かす
-			ballAction(&_ballPosX, &_ballPosY, &_ballVX, &_ballVY, _ballR, &_scene, &_timer);
+			ballAction(&_ballPosX, &_ballPosY, &_ballVX, &_ballVY, _ballR, &_scene, &_timer, _bgm, _gameoverSE);
 			//ラケットを動かす
 			racketAction(&_racketPosX, _racketPosY, _racketW, _racketH);
 			//ヒットチェック
-			checkHit(_ballPosX, _ballPosY, _racketPosX, _racketPosY, _racketW, &_ballVY, &_score, &_highScore);
+			checkHit(_ballPosX, _ballPosY, _racketPosX, _racketPosY, _racketW, &_ballVY, &_score, &_highScore, _hitSE);
 			//テキスト表示
 			textDisplay(_score, _highScore);
 			break;
