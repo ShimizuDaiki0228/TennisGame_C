@@ -175,12 +175,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		case TITLE:
 			SetFontSize(50);
 			DrawString(TITLE_TEXT_POS_X, TITLE_TEXT_POS_Y, "Tennis Game", GREEN);
+			
 			//文字を点滅表示
-			if (_timer % 60 < 30)
-			{
-				SetFontSize(30);
-				DrawString(INSTRUCTION_TEXT_POS_X, INSTRUCTION_TEXT_POS_Y, "Press SPACE to start.", CYAN);
-			}
+			SetFontSize(30);
+			// 描画モードをアルファブレンドにして透明度を時間に合わせて変更させる
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255 * abs(_timer % 80 - 40) / 40.0);
+			DrawString(INSTRUCTION_TEXT_POS_X, INSTRUCTION_TEXT_POS_Y, "Press SPACE to start.", CYAN);
+			SetDrawBlendMode(DX_BLENDMODE_ALPHA, 255);
+			
 			if (CheckHitKey(KEY_INPUT_SPACE) == 1)
 			{
 				//ゲーム開始のために初期化
