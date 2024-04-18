@@ -63,7 +63,14 @@ void racketAction(int* posX, int posY, int racketWidth, int racketHeight, int sc
 	);
 }
 
-void checkHit(int ballPosX, int ballPosY, int racketPosX, int racketPosY, int racketWidth, int* ballVY)
+void checkHit(int ballPosX,
+			  int ballPosY,
+		      int racketPosX,
+			  int racketPosY,
+			  int racketWidth,
+			  int* ballVY,
+			  int* score,
+			  int* highScore)
 {
 	int dx = ballPosX - racketPosX;
 	int dy = ballPosY - racketPosY;
@@ -72,7 +79,16 @@ void checkHit(int ballPosX, int ballPosY, int racketPosX, int racketPosY, int ra
 		&& (-20 < dy && dy < 0))
 	{
 		*ballVY = -5 - rand() % 5;
+		*score += 100;
+		if (*score > *highScore) *highScore = *score;
 	}
+}
+
+void textDisplay(int score, int highScore, int screenWidth, int white)
+{
+	SetFontSize(30);
+	DrawFormatString(10, 10, white, "SCORE %d", score);
+	DrawFormatString(screenWidth - 200, 10, white, "HIGHSCORE %d", highScore);
 }
 
 /// <summary>
@@ -97,9 +113,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 	//ボール
 	int _ballPosX = 40, _ballPosY = 80, _ballVX = 5, _ballVY = 5, _ballR = 10;
-
 	//ラケット
 	int _racketPosX = SCREEN_WIDTH / 2, _racketPosY = SCREEN_HEIGHT - 50, _racketW = 120, _racketH = 12;
+	//スコア
+	int _score = 0, _highScore = 200;
 
 	while (1)
 	{
@@ -112,7 +129,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		racketAction(&_racketPosX, _racketPosY, _racketW, _racketH, SCREEN_WIDTH, WHITE);
 
 		//ヒットチェック
-		checkHit(_ballPosX, _ballPosY, _racketPosX, _racketPosY, _racketW, &_ballVY);
+		checkHit(_ballPosX, _ballPosY, _racketPosX, _racketPosY, _racketW, &_ballVY, &_score, &_highScore);
+
+		//テキスト表示
+		textDisplay(_score, _highScore, SCREEN_WIDTH, WHITE);
 
 		ScreenFlip();
 		WaitTimer(16);
